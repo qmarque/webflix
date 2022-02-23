@@ -1,4 +1,3 @@
-import { QueryClient, QueryClientProvider } from "react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { combineReducers, configureStore } from "@reduxjs/toolkit";
 import { Provider } from "react-redux";
@@ -14,13 +13,13 @@ import {
   REGISTER,
 } from "redux-persist";
 import storage from "redux-persist/lib/storage";
-import { favoritesSlice } from "./slices";
+import createSagaMiddleware from "redux-saga";
+import { favoritesSlice, moviesSlice } from "./slices";
+import { rootSaga } from "./sagas";
 import Home from "./Home";
 import About from "./About";
 import Header from "./Header";
 import Movie from "./Movie";
-
-const queryClient = new QueryClient();
 
 const persistConfig = {
   key: "root",
@@ -31,18 +30,25 @@ const persistedReducer = persistReducer(
   persistConfig,
   combineReducers({
     favorites: favoritesSlice.reducer,
+    movies: moviesSlice.reducer,
   })
 );
 
+const sagaMiddleware = createSagaMiddleware();
+
 const store = configureStore({
   reducer: persistedReducer,
-  middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware({
+  middleware: (getDefaultMiddleware) => [
+    ...getDefaultMiddleware({
       serializableCheck: {
         ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
       },
     }),
+    sagaMiddleware,
+  ],
 });
+
+sagaMiddleware.run(rootSaga);
 
 const persistor = persistStore(store);
 
@@ -50,18 +56,16 @@ function App() {
   return (
           <Provider store={store}>
           <PersistGate persistor={persistor} loading={null}>
-            <QueryClientProvider client={queryClient}>
-              <BrowserRouter>
-                <Header />
-                <main>
-                  <Routes>
-                    <Route path="/" element={<Home />} />
-                    <Route path="/about" element={<About />} />
-                    <Route path="/movies/:id" element={<Movie />} />
-                  </Routes>
-                </main>
-              </BrowserRouter>
-            </QueryClientProvider>
+            <BrowserRouter>
+          <Header />
+          <main>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/movies/:id" element={<Movie />} />
+            </Routes>
+          </main>
+        </BrowserRouter>
           </PersistGate>
         </Provider>
   );
