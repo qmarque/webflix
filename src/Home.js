@@ -22,11 +22,13 @@ function Home() {
     }, [dispatch]);
   
     const movies = useSelector((state) => state.movies);
-
+    const moviesList = movies.filter((movie) =>
+    movie.title.match(new RegExp(value, "i"))
+    );
     return (
         <div className={classes.root}>
           <Input value={value} onChange={onChange} />
-          <VerticalList className={classes.list} data={movies} />      
+          <VerticalList className={classes.list} data={moviesList} />      
         </div>
     );
   }
